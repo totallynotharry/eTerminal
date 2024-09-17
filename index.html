@@ -1,130 +1,91 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eTerminal</title>
-    <style>
-        @font-face {
-            font-family: 'UniSansHeavy';
-            src: url('fonts/uni_sans_heavy-webfont.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
+<script>
+    const outputDiv = document.getElementById('output');
+    const commandInput = document.getElementById('command');
+
+    commandInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            const command = commandInput.value;
+            handleCommand(command);
+            commandInput.value = '';
         }
+    });
 
-        body {
-            background-color: #1E1E1E; /* Slightly darker charcoal */
-            color: #E0E0E0; /* Light grey text */
-            font-family: 'UniSansHeavy', sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden; /* Prevent scrollbars */
-        }
+    function handleCommand(command) {
+        const outputLine = document.createElement('div');
+        outputLine.textContent = 'eTerminal $ ' + command;
 
-        #terminal {
-            width: 90%;
-            max-width: 900px;
-            height: 80vh;
-            background-color: #121212; /* Even darker background for the terminal */
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7); /* Enhanced shadow for modern look */
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Prevent scrollbars inside the terminal */
-        }
+        const [cmd, ...args] = command.split(' ');
 
-        #output {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-            margin-bottom: 10px;
-        }
-
-        #input-line {
-            display: flex;
-            align-items: center;
-            border-top: 1px solid #333; /* Thin border on top */
-            padding-top: 10px;
-        }
-
-        #prompt {
-            color: #00C4CC; /* Brighter aqua green for prompt */
-            margin-right: 10px;
-            font-weight: bold;
-        }
-
-        #command {
-            background: none;
-            border: none;
-            color: #E0E0E0;
-            flex-grow: 1;
-            font-family: inherit;
-            font-size: 18px;
-            outline: none;
-            padding: 5px;
-            border-radius: 5px; /* Slight rounding for input */
-            transition: background-color 0.3s; /* Smooth background transition */
-        }
-
-        #command:focus {
-            background-color: #333; /* Dark background on focus */
-        }
-
-        ::selection {
-            background: #00C4CC; /* Brighter aqua green selection highlight */
-            color: white;
-        }
-
-        #output div {
-            margin: 5px 0; /* Spacing between output lines */
-        }
-    </style>
-</head>
-<body>
-
-    <div id="terminal">
-        <div id="output"></div>
-        <div id="input-line">
-            <span id="prompt">eTerminal $</span>
-            <input type="text" id="command" autofocus>
-        </div>
-    </div>
-
-    <script>
-        const outputDiv = document.getElementById('output');
-        const commandInput = document.getElementById('command');
-
-        commandInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                const command = commandInput.value;
-                handleCommand(command);
-                commandInput.value = '';
-            }
-        });
-
-        function handleCommand(command) {
-            const outputLine = document.createElement('div');
-            outputLine.textContent = 'eTerminal $ ' + command;
-
-            if (command === 'help') {
-                window.open('docs.html', '_blank'); // Open docs page in a new tab
+        switch (cmd) {
+            case 'help':
+                window.open('docs.html', '_blank');
                 return;
-            } else if (command.startsWith('echo')) {
-                outputLine.textContent += '\n' + command.replace('echo', '').trim();
-            } else if (command === 'clear') {
+            case 'echo':
+                outputLine.textContent += '\n' + args.join(' ');
+                break;
+            case 'clear':
                 outputDiv.innerHTML = '';
                 return;
-            } else {
+            case 'date':
+                outputLine.textContent += '\n' + new Date().toLocaleString();
+                break;
+            case 'calc':
+                try {
+                    const result = eval(args.join(' '));
+                    outputLine.textContent += '\n' + result;
+                } catch {
+                    outputLine.textContent += '\nInvalid expression.';
+                }
+                break;
+            case 'quote':
+                outputLine.textContent += '\n“Life is what happens when you’re busy making other plans.” - John Lennon';
+                break;
+            case 'joke':
+                outputLine.textContent += '\nWhy did the scarecrow win an award? Because he was outstanding in his field!';
+                break;
+            case 'weather':
+                fetchWeather(args.join(' '), outputLine);
+                break;
+            case 'search':
+                searchWeb(args.join(' '), outputLine);
+                break;
+            case 'paint':
+                startPaintApp();
+                break;
+            case 'info':
+                outputLine.textContent += '\nWelcome to eTerminal - Your custom terminal experience.';
+                break;
+            default:
                 outputLine.textContent += '\nCommand not recognized.';
-            }
-
-            outputDiv.appendChild(outputLine);
-            outputDiv.scrollTop = outputDiv.scrollHeight; // Scroll to bottom
         }
-    </script>
-</body>
-</html>
+
+        outputDiv.appendChild(outputLine);
+        outputDiv.scrollTop = outputDiv.scrollHeight; // Scroll to bottom
+    }
+
+    function fetchWeather(location, outputLine) {
+        const apiKey = 'YOUR_WEATHER_API_KEY';
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=metric`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.weather) {
+                    outputLine.textContent += `\nWeather in ${location}: ${data.weather[0].description}, Temp: ${data.main.temp}°C`;
+                } else {
+                    outputLine.textContent += `\nWeather data not found for ${location}`;
+                }
+            })
+            .catch(() => outputLine.textContent += '\nFailed to fetch weather data.');
+    }
+
+    function searchWeb(query, outputLine) {
+        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        outputLine.textContent += `\nOpening search results for "${query}" in a new tab.`;
+        window.open(url, '_blank');
+    }
+
+    function startPaintApp() {
+        outputDiv.innerHTML = '<iframe src="https://www.pixilart.com/draw" style="width:100%; height:600px; border:none;"></iframe>';
+    }
+</script>
